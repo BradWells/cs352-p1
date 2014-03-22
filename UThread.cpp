@@ -41,36 +41,19 @@ public:
     }
 
     ~UThread(){
-        // free(stack_pointer);
+        //This is gon' break
+        if(stack_pointer != NULL){
+            free(stack_pointer);
+        }
     }
-
-    // ucontext_t get_context();
-    // int get_priority();
-    // void *get_sp();
-
 };
-
-
-// ucontext_t UThread::get_context(){
-//     return context;
-// }
-
-// int UThread::get_priority(){
-//     return priority;
-// }
-
-// void *UThread::get_sp(){
-//     return stack_pointer;
-// }
-
-
 
 
 //Source:
 //http://stackoverflow.com/questions/19535644/how-to-use-the-priority-queue-stl-for-objects
 struct CompareUThread{
-    bool operator()(const UThread & t1, const UThread & t2) {
+    bool operator()(const UThread* t1, const UThread* t2) {
         // return "true" if "p1" is ordered before "p2", for example:
-        return t1.priority > t2.priority;
+        return t1->priority > t2->priority;
     }
 };

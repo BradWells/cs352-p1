@@ -4,50 +4,41 @@
 
 using namespace std;
 
-static ucontext_t *current_context_p;
+UThread* current_thread;
 
 //This is a flag to see whether the returning thread is yielding
 // static bool is_yielding = false;
 
-priority_queue<UThread, vector<UThread>, CompareUThread> pq;
-
-
-// //This is the handler for all of the UThreads
-// void run_uthreads(){
-
-//     while(!pq.empty()){
-//         next_thread = pq.top();
-//         pq.pop();
-//         swapcontext(runner_pointer, &(next_thread.get_context()))
-//         if(!is_yielding){
-//             free(next_thread.get_sp());
-//         }
-//         else{
-//             is_yielding = false;
-//         }
-//         //Even if it is yielding, a new object is made.
-//         delete next_thread;
-//     }
-//     //Free the stack pointer for runner_pointer:
-//     free((*runner_pointer).uc_stack.ss_sp);
-// }
+priority_queue<UThread*, vector<UThread*>, CompareUThread> pq;
 
 int uthread_yield(int priority){
+
+    //The top thread should be the current one
+    if(current_thread == pq.top()){
+        pq.pop();
+    }
     //Do I have to check any other case?
     if(pq.empty()){
         return -1;
     }
     else{
-        //Temporary storage for the context
-        getcontext(current_context_p);
-        
 
-        UThread next = pq.top();
-        pq.pop();
-        ucontext_t next_cont = next.context;
-        current_context_p = &next_cont;
+        //Get the next thread
+        UThread* next = pq.top();
 
-        swapcontext()
+        ucontext_t next_cont = next->context;
+
+        //The current thread is yielding
+        //Put the new context into the current thread.
+        current_thread->priority = priority;
+
+        //Requeue it
+        // pq.push(current_thread);
+        //--------------------------------------
+
+        // current_thread = next;
+
+        // swapcontext(&(current_thread->context), &next_cont);
     }
 
     return 0;
@@ -56,10 +47,10 @@ int uthread_yield(int priority){
 
 void call_next_thread(){
     if(!pq.empty()){
-        UThread next = pq.top();
-        pq.pop();
-        ucontext_t next_cont = next.context;
-        current_context_p = &next_cont;
+        UThread* next = pq.top();
+        ucontext_t next_cont = next->context;
+
+        current_thread = next;
 
         setcontext(&next_cont);
     }
@@ -69,10 +60,17 @@ void call_next_thread(){
 }
 
 void clean_up(){
-    //free stack_pointer?
-    //delete current_thread?
-    //free exit_context_stackpointer?
-    //free exit_context?
+    UThread* finished = pq.top();
+    if(current_thread == finished){
+        pq.pop();
+        delete finished;
+    }
+    if(pq.empty()){
+        //Free the last few things and exit
+        //free exit context stack pointer
+        //free exit context
+        //exit(0);
+    }
 }
 
 void uthread_exit(){
@@ -81,8 +79,8 @@ void uthread_exit(){
 }
 
 int uthread_create(void (*func)(), int priority){
-    const UThread *new_thread = new const UThread(func, priority);
-    pq.push(*new_thread);
+    UThread *new_thread = new UThread(func, priority);
+    pq.push(new_thread);
     return 0;
 }
 
@@ -94,6 +92,8 @@ void print_hi(){
 
 void print_hello(){
     printf("Hello");
+    uthread_yield(3);
+    printf("yielded");
     //uthread_exit();
 }
 
@@ -106,17 +106,14 @@ void system_init(){
     exit_context.uc_stack.ss_size = STACK_SIZE;
     makecontext(&exit_context, uthread_exit, 0);
 
-    current_context_p = (ucontext_t*) malloc(sizeof(ucontext_t));
-    getcontext(current_context_p);
-
 }
 
 int main(int argc, char* args[]){
     system_init();
     uthread_create(print_hi, 2);
-    uthread_create(print_hi, 3);
-    uthread_create(print_hi, 3);
     uthread_create(print_hello, 1);
+    uthread_create(print_hi, 3);
+    uthread_create(print_hi, 3);
     printf("Created");
     uthread_exit();
     return 0;
