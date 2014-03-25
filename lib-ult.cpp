@@ -28,17 +28,24 @@ int uthread_yield(int priority){
 
         ucontext_t next_cont = next->context;
 
+        //Set up yielding flag
+        bool yielding = true;
+
         //The current thread is yielding
         //Put the new context into the current thread.
         current_thread->priority = priority;
+        getcontext(&(current_thread->context));
 
-        //Requeue it
-        // pq.push(current_thread);
-        //--------------------------------------
+        if(yielding){
+            yielding = false;
+            //Requeue it
+            pq.push(current_thread);
 
-        // current_thread = next;
+            current_thread = next;
 
-        // swapcontext(&(current_thread->context), &next_cont);
+            setcontext(&next_cont);
+        }
+
     }
 
     return 0;
@@ -67,7 +74,7 @@ void clean_up(){
     }
     if(pq.empty()){
         //Free the last few things and exit
-        //free exit context stack pointer
+        free(exit_context.uc_stack.ss_sp);
         //free exit context
         //exit(0);
     }
@@ -99,12 +106,13 @@ void print_hello(){
 
 
 void system_init(){
-
     //Make exit context
     getcontext(&exit_context);
     exit_context.uc_stack.ss_sp = malloc(STACK_SIZE);
     exit_context.uc_stack.ss_size = STACK_SIZE;
     makecontext(&exit_context, uthread_exit, 0);
+
+    //TODO yield main to itself to put it in the queue.
 
 }
 
@@ -116,5 +124,4 @@ int main(int argc, char* args[]){
     uthread_create(print_hi, 3);
     printf("Created");
     uthread_exit();
-    return 0;
 }
