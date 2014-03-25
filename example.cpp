@@ -5,27 +5,27 @@ int myid=0;
 
 void do_something()
 {
-        int id;
+    int id;
 
-        id=myid;
-        myid++;
+    id=myid;
+    myid++;
 
-        printf("This is ult %d\n", id);
-        if(n_threads<10){
-                uthread_create(do_something,2);
-                n_threads++;
-                uthread_create(do_something,2);
-                n_threads++;
-        }
-        printf("This is ult %d again\n",id);
-        uthread_yield(1);
-        printf("This is ult %d one more time\n",id);
+    printf("This is ult %d\n", id);
+    if(n_threads<10){
+        uthread_create(do_something,2);
+        n_threads++;
+        uthread_create(do_something,2);
+        n_threads++;
+    }
+    printf("This is ult %d again\n",id);
+    uthread_yield(1);
+    printf("This is ult %d one more time\n",id);
 }
 
 // main()
 // {
-//         int i;
-//         system_init(); 
-//         uthread_create(do_something,2);
-// 	uthread_exit();
+//     int i;
+//     system_init(); 
+//     uthread_create(do_something,2);
+//     uthread_exit();
 // }

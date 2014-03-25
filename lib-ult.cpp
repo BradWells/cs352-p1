@@ -17,8 +17,13 @@ int uthread_yield(int priority){
     if(current_thread == pq.top()){
         pq.pop();
     }
+    else{
+        printf("ERROR");
+        exit(-1);
+    }
     //Do I have to check any other case?
     if(pq.empty()){
+        pq.push(current_thread);
         return -1;
     }
     else{
@@ -100,27 +105,35 @@ void print_hi(){
 void print_hello(){
     printf("Hello");
     uthread_yield(3);
+    uthread_create(print_hi, 4);
+    //uthread_yield(3);
     printf("yielded");
     //uthread_exit();
 }
 
 
 void system_init(){
+    //Make exit context
+    getcontext(&exit_context);
+    exit_context.uc_stack.ss_sp = malloc(STACK_SIZE);
+    exit_context.uc_stack.ss_size = STACK_SIZE;
+    makecontext(&exit_context, uthread_exit, 0);
+
+
     bool init = false;
 
     //Make starter thread
     uthread_create(system_init, 1);
     UThread *this_thread = pq.top();
+    current_thread = this_thread;
     //Update where we are
     getcontext(&(this_thread->context));
+    (this_thread->context).uc_link = &exit_context;
 
-
-        //Make exit context
-        getcontext(&exit_context);
-        exit_context.uc_stack.ss_sp = malloc(STACK_SIZE);
-        exit_context.uc_stack.ss_size = STACK_SIZE;
-        makecontext(&exit_context, uthread_exit, 0);
-
+    if(!init){
+        init = true;
+        setcontext(&(this_thread->context));
+    }
         
 }
 
