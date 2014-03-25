@@ -106,14 +106,22 @@ void print_hello(){
 
 
 void system_init(){
-    //Make exit context
-    getcontext(&exit_context);
-    exit_context.uc_stack.ss_sp = malloc(STACK_SIZE);
-    exit_context.uc_stack.ss_size = STACK_SIZE;
-    makecontext(&exit_context, uthread_exit, 0);
+    bool init = false;
 
-    //TODO yield main to itself to put it in the queue.
+    //Make starter thread
+    uthread_create(system_init, 1);
+    UThread *this_thread = pq.top();
+    //Update where we are
+    getcontext(&(this_thread->context));
 
+
+        //Make exit context
+        getcontext(&exit_context);
+        exit_context.uc_stack.ss_sp = malloc(STACK_SIZE);
+        exit_context.uc_stack.ss_size = STACK_SIZE;
+        makecontext(&exit_context, uthread_exit, 0);
+
+        
 }
 
 int main(int argc, char* args[]){
