@@ -5,6 +5,7 @@
 using namespace std;
 
 UThread* current_thread;
+bool VERBOSE = false;
 
 //This is a flag to see whether the returning thread is yielding
 // static bool is_yielding = false;
@@ -13,23 +14,17 @@ priority_queue<UThread*, vector<UThread*>, CompareUThread> pq;
 
 int uthread_yield(int priority){
 
-    //The top thread should be the current one
-    if(current_thread == pq.top()){
-        pq.pop();
-    }
-    else{
-        printf("ERROR");
-        exit(-1);
-    }
     //Do I have to check any other case?
     if(pq.empty()){
-        pq.push(current_thread);
+        if(VERBOSE) printf("*cant yield, queue is empty*\n");
         return -1;
     }
     else{
 
+        if(VERBOSE) printf("*yielding now*\n");
         //Get the next thread
         UThread* next = pq.top();
+        pq.pop();
 
         ucontext_t next_cont = next->context;
 
@@ -42,6 +37,7 @@ int uthread_yield(int priority){
         getcontext(&(current_thread->context));
 
         if(yielding){
+            if(VERBOSE) printf("*got context in yield*\n");
             yielding = false;
             //Requeue it
             pq.push(current_thread);
@@ -51,6 +47,8 @@ int uthread_yield(int priority){
             setcontext(&next_cont);
         }
 
+        if(VERBOSE) printf("*back after yielding*\n");
+
     }
 
     return 0;
@@ -58,8 +56,11 @@ int uthread_yield(int priority){
 }
 
 void call_next_thread(){
+    if(VERBOSE) printf("*Starting next thread because queue size is %d\n", pq.size());
     if(!pq.empty()){
         UThread* next = pq.top();
+        pq.pop();
+
         ucontext_t next_cont = next->context;
 
         current_thread = next;
@@ -72,11 +73,8 @@ void call_next_thread(){
 }
 
 void clean_up(){
-    UThread* finished = pq.top();
-    if(current_thread == finished){
-        pq.pop();
-        delete finished;
-    }
+    if(VERBOSE) printf("*Cleaning up\n");
+    delete current_thread;
     if(pq.empty()){
         //Free the last few things and exit
         free(exit_context.uc_stack.ss_sp);
@@ -86,6 +84,7 @@ void clean_up(){
 }
 
 void uthread_exit(){
+    if(VERBOSE) printf("*Starting exit\n");
     clean_up();
     call_next_thread();
 }
@@ -125,6 +124,7 @@ void system_init(){
     //Make starter thread
     uthread_create(system_init, 1);
     UThread *this_thread = pq.top();
+    pq.pop();
     current_thread = this_thread;
     //Update where we are
     getcontext(&(this_thread->context));
@@ -137,12 +137,12 @@ void system_init(){
         
 }
 
-int main(int argc, char* args[]){
-    system_init();
-    uthread_create(print_hi, 2);
-    uthread_create(print_hello, 1);
-    uthread_create(print_hi, 3);
-    uthread_create(print_hi, 3);
-    printf("Created");
-    uthread_exit();
-}
+// int main(int argc, char* args[]){
+//     system_init();
+//     uthread_create(print_hi, 2);
+//     uthread_create(print_hello, 1);
+//     uthread_create(print_hi, 3);
+//     uthread_create(print_hi, 3);
+//     printf("Created!\n");
+//     uthread_exit();
+// }

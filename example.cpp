@@ -22,10 +22,10 @@ void do_something()
     printf("This is ult %d one more time\n",id);
 }
 
-// main()
-// {
-//     int i;
-//     system_init(); 
-//     uthread_create(do_something,2);
-//     uthread_exit();
-// }
+main()
+{
+    int i;
+    system_init(); 
+    uthread_create(do_something,2);
+    uthread_exit();
+}
