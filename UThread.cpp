@@ -7,6 +7,7 @@
 extern void uthread_exit();
 
 ucontext_t exit_context;
+bool initialized = false;
 
 class UThread {
     void *stack_pointer;
